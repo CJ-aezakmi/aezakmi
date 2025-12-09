@@ -5,6 +5,9 @@ on:
     branches: [ main ]
     tags: ['v*']
 
+permissions:
+  contents: write
+
 jobs:
   build-windows:
     name: Build on Windows and create release
@@ -65,4 +68,5 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           draft: false
           prerelease: false
-          overwrite: true
+          allowUpdates: true
+          replacesArtifacts: true
