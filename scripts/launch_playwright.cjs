@@ -8,47 +8,50 @@ const fs = require('fs');
 const path = require('path');
 let ProxyChain = null;
 
-// Auto-install Chromium if not present (only in dev/unpacked mode)
+// Auto-install Chromium if not present
 async function ensureChromiumInstalled() {
-  // If PLAYWRIGHT_BROWSERS_PATH is set (bundled app), skip auto-install
-  if (process.env.PLAYWRIGHT_BROWSERS_PATH) {
-    console.log('Using bundled Playwright browsers from:', process.env.PLAYWRIGHT_BROWSERS_PATH);
-    try {
-      const executablePath = chromium.executablePath();
-      if (fs.existsSync(executablePath)) {
-        console.log('Chromium browser found at:', executablePath);
-        return;
-      } else {
-        throw new Error('Chromium executable not found at expected path: ' + executablePath);
-      }
-    } catch (e) {
-      throw new Error('Bundled Chromium browser not accessible: ' + e.message);
-    }
-  }
-
-  // Development mode: check and auto-install if needed
+  // Check if chromium is already available
   try {
     const executablePath = chromium.executablePath();
     if (fs.existsSync(executablePath)) {
-      console.log('Chromium browser already installed');
+      console.log('Chromium browser already installed at:', executablePath);
       return;
     }
   } catch (e) {
-    console.log('Chromium browser not found, installing...');
+    console.log('Chromium browser not found, will attempt installation...');
   }
 
+  // Try to auto-install
   try {
-    // Try to install Chromium
-    console.log('Running: npx playwright install chromium --with-deps');
-    execSync('npx playwright install chromium --with-deps', { 
+    console.log('Installing Chromium browser...');
+    console.log('This may take a few minutes on first launch.');
+    
+    // On Windows in pkg bundle, use npx from PATH
+    const installCmd = process.platform === 'win32' 
+      ? 'npx.cmd playwright install chromium'
+      : 'npx playwright install chromium';
+    
+    execSync(installCmd, { 
       stdio: 'inherit',
-      timeout: 300000 // 5 minutes timeout
+      timeout: 600000, // 10 minutes timeout
+      env: { ...process.env }
     });
-    console.log('Chromium browser installed successfully');
+    
+    console.log('Chromium browser installed successfully!');
+    
+    // Verify installation
+    const executablePath = chromium.executablePath();
+    if (fs.existsSync(executablePath)) {
+      console.log('Verified Chromium at:', executablePath);
+    } else {
+      throw new Error('Installation completed but browser not found');
+    }
   } catch (installError) {
     console.error('Failed to auto-install Chromium:', installError.message);
-    console.log('Please run manually: npx playwright install chromium');
-    throw new Error('Chromium browser not installed. Please install manually: npx playwright install chromium');
+    console.error('\nPlease install manually by running:');
+    console.error('  npm install -g playwright');
+    console.error('  npx playwright install chromium');
+    throw new Error('Chromium browser not available. Manual installation required.');
   }
 }
 

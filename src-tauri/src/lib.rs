@@ -119,19 +119,6 @@ fn open_profile(_app: tauri::AppHandle, app_path: String, args: String) -> Resul
             };
             
             cmd.arg(payload_b64);
-            
-            // Set environment variable for Playwright to find browsers in app directory
-            if cfg!(target_os = "windows") {
-                let app_dir = std::env::current_exe()
-                    .ok()
-                    .and_then(|p| p.parent().map(|p| p.to_path_buf()))
-                    .ok_or("Failed to get app directory")?;
-                let playwright_browsers = app_dir.join("playwright-browsers");
-                if playwright_browsers.exists() {
-                    cmd.env("PLAYWRIGHT_BROWSERS_PATH", playwright_browsers);
-                }
-            }
-            
             let _child = cmd.spawn().map_err(|e| e.to_string())?;
             return Ok(());
         }
